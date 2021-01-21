@@ -1,0 +1,17 @@
+* Writer word goals
+:PROPERTIES:
+:CREATED:  [2021-01-21 Thu 22:25]
+:ID:       890cc43f-c472-41e6-8733-aec41c9c16f0
+:END:
+
+This is a simple mode that lets you set a number of words you would
+like to write in the current Emacs buffer and periodically indicates
+how well you are doing. It congratulates you when you reach your goal.
+
+The only fancy feature is that the count is keeps track of the
+countdown by buffer, so you can have multiple goals running
+simultaneously if you would like to challenge yourself.
+
+You can use =wwg/set-goal-current-buffer= to set your own goal, or
+=wwg/set-1k-goal-current-buffer= which is preset to 1000 words (a day)
+as [[https://en.wikipedia.org/wiki/Walter_Mosley][Walter Mosley]] would suggest.
