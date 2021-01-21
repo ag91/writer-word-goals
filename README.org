@@ -15,3 +15,6 @@ simultaneously if you would like to challenge yourself.
 You can use =wwg/set-goal-current-buffer= to set your own goal, or
 =wwg/set-1k-goal-current-buffer= which is preset to 1000 words (a day)
 as [[https://en.wikipedia.org/wiki/Walter_Mosley][Walter Mosley]] would suggest.
+
+A blog about the story behind this mode:
+https://ag91.github.io/blog/2021/01/21/have-you-writer-ambitions-write-a-little-write-everyday-and-let-emacs-be-your-coach
