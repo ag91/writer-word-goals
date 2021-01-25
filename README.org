@@ -18,3 +18,23 @@ as [[https://en.wikipedia.org/wiki/Walter_Mosley][Walter Mosley]] would suggest.
 
 A blog about the story behind this mode:
 https://ag91.github.io/blog/2021/01/21/have-you-writer-ambitions-write-a-little-write-everyday-and-let-emacs-be-your-coach
+
+** Setup
+:PROPERTIES:
+:CREATED:  [2021-01-25 Mon 22:12]
+:ID:       d78713dc-4cfd-4164-b6ad-f9a5faa442a7
+:END:
+
+You can setup this package by:
+
+#+begin_src elisp
+(add-to-list 'load-path "<your-path>/writer-word-goals")
+(require 'wwg)
+#+end_src
+
+Or if you use [[https://github.com/jwiegley/use-package][use-package]]:
+
+#+begin_src elisp
+(use-package wwg
+  :load-path "<your-path>/writer-word-goals")
+#+end_src
