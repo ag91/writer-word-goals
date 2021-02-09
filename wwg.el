@@ -3,8 +3,8 @@
 ;; Copyright (C) 2021 Andrea
 
 ;; Author: Andrea andrea-dev@hotmail.com>
-;; Version: 0.0.0
-;; Package-Version: 20210121
+;; Version: 0.0.1
+;; Package-Version: 20210209
 ;; Keywords: writing
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -43,6 +43,15 @@
 
 (defvar wwg/monitor-function 'wwg/check-count-and-beep-with-message-if-finished "The function to monitor the target was reached in buffer. It takes two arguments: a number (target) and the buffer. It should return any value when it finds the target satisfied for cleanup purposes.")
 
+(defun wwg/choose-message (remaining-words)
+  "Produce a message according to the delta between TARGET-COUNT and REMAINING-WORDS."
+  (cond
+   ((< remaining-words 50) "Fabulous, so close!")
+   ((< remaining-words 200) "You are quite done, awesome!")
+   ((< remaining-words 500) "Okay, doing good effort there!")
+   ((< remaining-words 800) "Not bad!")
+   ('otherwise "Okay!")))
+
 (defun wwg/check-count-and-beep-with-message-if-finished (target-count buffer)
   "Beep if TARGET-COUNT was reached in BUFFER."
   (let* ((total-so-far (with-current-buffer buffer (count-words (point-min) (point-max))))
@@ -51,13 +60,14 @@
         (progn
           (beep)
           (message
-           "Well done! You wrote %s words, and %s extra words!!"
+           "Well done! You wrote %s words, and %s extra words of what you planned!!"
            target-count
            (abs remaining-words))
           'finished)
       (progn
         (message
-         "Okay! %s words left."
+         "%s %s words left."
+         (wwg/choose-message remaining-words)
          remaining-words)
         nil))))
 
