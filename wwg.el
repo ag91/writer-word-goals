@@ -73,14 +73,14 @@
          remaining-words)
         nil))))
 
-(defun wwg-run-monitor (target-number buffer)
+(defun wwg-run-monitor (target-number buffer &optional fn)
   "Call `wwg-monitor-function' with TARGET-NUMBER and BUFFER and cleanup timer if completed."
   (when (and
          (eq buffer (current-buffer))
-         (funcall wwg-monitor-function target-number buffer))
+         (funcall (or fn wwg-monitor-function) target-number buffer))
     (cancel-timer (car (alist-get buffer wwg-active-timer-alist)))))
 
-(defun wwg-monitor-word-count-for-buffer (target-number buffer)
+(defun wwg-monitor-word-count-for-buffer (target-number buffer &optional fn)
   "Monitor every `wwg-monitor-period' seconds if the writer reached the TARGET-NUMBER in BUFFER."
   (add-to-list
    'wwg-active-timer-alist
@@ -89,7 +89,7 @@
     (run-with-timer
      wwg-monitor-period
      wwg-monitor-period
-     `(lambda () (wwg-run-monitor ,target-number ,buffer))))))
+     `(lambda () (wwg-run-monitor ,target-number ,buffer ',fn))))))
 
 (defun wwg-set-goal-current-buffer (number-of-words)
   "Monitor when you achieve the target NUMBER-OF-WORDS."
@@ -103,40 +103,39 @@
   (interactive)
   (wwg-set-goal-current-buffer 1000))
 
-
 ;; BEGIN editing
 
 (defface wwg-red-face
   '((((class grayscale)
-      (background light)) (:background "DimGray"))
+      (background light)) (:background "OrangeRed"))
     (((class grayscale)
-      (background dark))  (:background "LightGray"))
+      (background dark))  (:background "OrangeRed"))
     (((class color)
-      (background light)) (:foreground "Black" :background "OrangeRed")) ; TODO changing only for mine for now
+      (background light)) (:foreground "Black" :background "OrangeRed"))
     (((class color)
-      (background dark))  (:foreground "Black" :background "DarkOrange1")))
+      (background dark))  (:foreground "Black" :background "OrangeRed")))
   "Face used to highlight current line.")
 
 (defface wwg-yellow-face
   '((((class grayscale)
-      (background light)) (:background "DimGray"))
+      (background light)) (:background "LightYellow"))
     (((class grayscale)
-      (background dark))  (:background "LightGray"))
+      (background dark))  (:background "LightYellow"))
     (((class color)
-      (background light)) (:foreground "Black" :background "LightYellow")) ; TODO changing only for mine for now
+      (background light)) (:foreground "Black" :background "LightYellow"))
     (((class color)
-      (background dark))  (:foreground "Black" :background "DarkOrange1")))
+      (background dark))  (:foreground "Black" :background "LightYellow")))
   "Face used to highlight current line.")
 
 (defface wwg-green-face
   '((((class grayscale)
-      (background light)) (:background "DimGray"))
+      (background light)) (:background "LightGreen"))
     (((class grayscale)
-      (background dark))  (:background "LightGray"))
+      (background dark))  (:background "LightGreen"))
     (((class color)
-      (background light)) (:foreground "Black" :background "LightGreen")) ; TODO changing only for mine for now
+      (background light)) (:foreground "Black" :background "LightGreen"))
     (((class color)
-      (background dark))  (:foreground "Black" :background "DarkOrange1")))
+      (background dark))  (:foreground "Black" :background "LightGreen")))
   "Face used to highlight current line.")
 
 (defun wwg-pick-color-face (score)
@@ -162,15 +161,6 @@
           (setq last-visited (point))
           (forward-paragraph))))))
 
-(defun wwg-unhighlight-paragraphs ()
-  "Remove paragraph highlighting."
-  (save-excursion
-    (let (last-visited)
-      (while (and (bounds-of-thing-at-point 'paragraph) (not (eq last-visited (point-max))))
-        (let ((bounds (bounds-of-thing-at-point 'paragraph)))
-          (wwg-unhighlight-region (car bounds))
-          (setq last-visited (point))
-          (forward-paragraph))))))
 
 (defun wwg-highlight-sentences ()
   "Highlight sentences according to easy score."
@@ -186,31 +176,18 @@
         (wwg-highlight-region begin end color-face)
         (forward-sentence)))))
 
-(defun wwg-unhighlight-sentences ()
-  "Remove sentence highlighting."
-  (save-excursion
-    (while (bounds-of-thing-at-point 'sentence)
-      (let ((bounds (bounds-of-thing-at-point 'sentence)))
-        (wwg-unhighlight-region (car bounds))
-        (forward-sentence)))))
-
 (defun wwg-highlight-region (begin end &optional color-face)
   "Highlight region between BEGIN and END in green, unless COLOR-FACE."
   (let ((overlay (make-overlay begin end)))
     (overlay-put overlay 'category 'wwg-overlay) ;; add my category to the overlay
     (overlay-put overlay 'face (or color-face 'wwg-green-face))))
 
-(defun wwg-unhighlight-region (point &optional color-face)
-  "Delete any overlay at POINT. Optionally only those with COLOR-FACE."
-  (--> (overlays-at point)
-    (--filter (eq (overlay-get it 'category) 'wwg-overlay) it)
-    (--each it (delete-overlay it))))
-
 (defvar wwg-editing-highlighting-atom 'sentence "What to highlight for editing.")
 
 (defun wwg-highlight-for-editing ()
   "Highlight complexity for editing."
   (interactive)
+  (add-hook 'after-save-hook 'wwg-editing-highlighting-hook-fn nil 't)
   (cond
    ((eq wwg-editing-highlighting-atom 'sentence) (wwg-highlight-sentences))
    ((eq wwg-editing-highlighting-atom 'paragraph) (wwg-highlight-paragraphs))))
@@ -218,9 +195,8 @@
 (defun wwg-unhighlight-for-editing ()
   "Unhighlight complexity for editing."
   (interactive)
-  (cond
-   ((eq wwg-editing-highlighting-atom 'sentence) (wwg-unhighlight-sentences))
-   ((eq wwg-editing-highlighting-atom 'paragraph) (wwg-unhighlight-paragraphs))))
+  (remove-hook 'after-save-hook 'wwg-editing-highlighting-hook-fn 't)
+  (remove-overlays (point-min) (point-max) 'category 'wwg-overlay))
 
 (defun wwg-toggle-highlighting-atom ()
   "Toggle `wwg-toggle-highlighting-atom' for highlighting style between sentences and paragraphs."
@@ -244,10 +220,61 @@
       (wwg-unhighlight-for-editing)
     (wwg-highlight-for-editing)))
 
+
+;;;;; Taken from writegood-mode: you should try this awesome mode out https://github.com/bnbeckwith/writegood-mode
+
+(defcustom writegood-sentence-punctuation
+  '(?. ?? ?!)
+  "List of punctuation denoting sentence end"
+  :group 'writegood
+  :type '(repeat character))
+
 (defun wwg-editing-highlighting-hook-fn ()
   "Hook function after saving to use during an editing session to find more easily editing targets."
   (wwg-unhighlight-for-editing)
   (wwg-highlight-for-editing))
+
+(defun writegood-count-words (rstart rend)
+  "Count the words specified by the region bounded by RSTART and REND."
+  (if (boundp 'count-words)
+      (count-words rstart rend)
+    (how-many "[[:word:]]+" rstart rend)))
+
+(defun writegood-count-sentences (rstart rend)
+  "Count the sentences specified by the region bounded by RSTART and REND."
+  (how-many (regexp-opt-charset writegood-sentence-punctuation) rstart rend))
+
+(defun writegood-count-syllables (rstart rend)
+  "Count the (approximate) number of syllables in the region bounded by RSTART and REND.
+
+   Consecutive vowels count as one syllable. The endings -es -ed
+   and -e are not counted as syllables.
+  "
+  (- (how-many "[aeiouy]+" rstart rend)
+     (how-many "\\(es\\|ed\\|e\\)\\b" rstart rend)))
+
+(defun writegood-fk-parameters (&optional rstart rend)
+  "Flesch-Kincaid reading parameters"
+  (let* ((start (cond (rstart rstart)
+                      ((and transient-mark-mode mark-active) (region-beginning))
+                      ('t (point-min))))
+         (end   (cond (rend rend)
+                      ((and transient-mark-mode mark-active) (region-end))
+                      ('t (point-max))))
+         (words     (float (writegood-count-words start end)))
+         (syllables (float (writegood-count-syllables start end)))
+         (sentences (float (writegood-count-sentences start end))))
+    (list sentences words syllables)))
+
+(defun writegood-calculate-reading-ease (&optional start end)
+  "Calculate score of Flesch-Kincaid reading ease test in the region bounded by START and END.
+
+Scores roughly between 0 and 100."
+  (let* ((params (writegood-fk-parameters start end))
+         (sentences (nth 0 params))
+         (words     (nth 1 params))
+         (syllables (nth 2 params)))
+    (- 206.835 (* 1.015 (/ words sentences)) (* 84.6 (/ syllables words)))))
 
 (defun wwg-calculate-readability-buffer (buffer)
   "Calculate readability of BUFFER."
@@ -268,7 +295,6 @@
       (progn
         (beep)
         (wwg-unhighlight-for-editing)
-        (remove-hook 'after-save-hook 'wwg-editing-highlighting-hook-fn 't)
         (message
          "Well done! You increased readability of %.2f%%, now it is at %.2f%%!!"
          target-count
@@ -279,39 +305,19 @@
        (wwg-editing-goal-diff target-count buffer))
       nil)))
 
-;; TODO use only built-ins for this mode:  no s.el nor dash.el
 (defun wwg-set-editing-goal (percentage)
   "Set an editing goal by defining by which PERCENTAGE you want to increase readibility."
   (interactive
-   (list (--> (completing-read "Choose readability increase: " (list "Easy: 5%" "Medium: 20%" "Hard: 50%") nil 't nil nil "Easy: 5%")
-           (substring it (- (length it) 3) (- (length it) 1))
-           s-trim
-           string-to-number)))
+   (let* ((input (completing-read "Choose readability increase: " (list "Easy: 5%" "Medium: 20%" "Hard: 50%") nil 't nil nil "Easy: 5%"))
+	  (percentage-string (substring input (- (length input) 3) (- (length input) 1))))
+     (list (string-to-number (string-trim percentage-string)))))
   (let* ((buffer (current-buffer))
-         (current-readibility (wwg-calculate-readability-buffer buffer))
-         )
-    (add-hook 'after-save-hook 'wwg-editing-highlighting-hook-fn nil 't)
+         (current-readibility (wwg-calculate-readability-buffer buffer)))
     (wwg-highlight-for-editing)
     (wwg-monitor-word-count-for-buffer (+ current-readibility percentage) buffer 'wwg-check-readibility-and-beep-with-message-if-finished))) ;; TODO there is an issue here because I can set unreachable goals?
 
 
-(defun wwg-run-monitor (target-number buffer &optional fn)
-  "Call `wwg-monitor-function' with TARGET-NUMBER and BUFFER and cleanup timer if completed."
-  (when (and
-         (eq buffer (current-buffer))
-         (funcall (or fn wwg-monitor-function) target-number buffer))
-    (cancel-timer (car (alist-get buffer wwg-active-timer-alist)))))
 
-(defun wwg-monitor-word-count-for-buffer (target-number buffer &optional fn)
-  "Monitor every `wwg-monitor-period' seconds if the writer reached the TARGET-NUMBER in BUFFER."
-  (add-to-list
-   'wwg-active-timer-alist
-   (list
-    buffer
-    (run-with-timer
-     wwg-monitor-period
-     wwg-monitor-period
-     `(lambda () (wwg-run-monitor ,target-number ,buffer ',fn))))))
 ;; END editing
 
 
