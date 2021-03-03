@@ -149,6 +149,9 @@
   "Highlight paragraphs according to easy score."
   (save-excursion
     (goto-char (point-min))
+    ;; go to first sentence because org mode files may start with heading lines
+    (unless (bounds-of-thing-at-point 'paragraph)
+      (while (and (not (bounds-of-thing-at-point 'paragraph)) (forward-paragraph))))
     (let (last-visited)
       (while (and (bounds-of-thing-at-point 'paragraph) (not (eq last-visited (point-max))))
         (let* ((bounds (bounds-of-thing-at-point 'paragraph))
@@ -166,6 +169,9 @@
   "Highlight sentences according to easy score."
   (save-excursion
     (goto-char (point-min))
+    ;; go to first sentence because org mode files may start with heading lines
+    (unless (bounds-of-thing-at-point 'sentence)
+      (while (and (not (bounds-of-thing-at-point 'sentence)) (forward-sentence))))
     (while (bounds-of-thing-at-point 'sentence)
       (let* ((bounds (bounds-of-thing-at-point 'sentence))
              (begin (car bounds))
@@ -201,22 +207,23 @@
 (defun wwg-toggle-highlighting-atom ()
   "Toggle `wwg-toggle-highlighting-atom' for highlighting style between sentences and paragraphs."
   (interactive)
+  (wwg-unhighlight-for-editing)
   (cond
    ((eq wwg-editing-highlighting-atom 'sentence)
     (progn
       (setq wwg-editing-highlighting-atom 'paragraph)
-      (wwg-unhighlight-sentences)
       (wwg-highlight-for-editing)))
    ((eq wwg-editing-highlighting-atom 'paragraph)
     (progn
       (setq wwg-editing-highlighting-atom 'sentence)
-      (wwg-unhighlight-paragraphs)
       (wwg-highlight-for-editing)))))
 
 (defun wwg-toggle-highlighting ()
   "Toggle editing highlighting."
   (interactive)
-  (if (ignore-errors (eq 'wwg-overlay (overlay-get (car (overlays-at (point-min))) 'category)))
+  (if (let ((overlays (overlay-lists)))
+        (or (seq-find (lambda (overlay) (eq 'wwg-overlay (overlay-get overlay 'category))) (car overlays))
+            (seq-find (lambda (overlay) (eq 'wwg-overlay (overlay-get overlay 'category))) (cdr overlays))))
       (wwg-unhighlight-for-editing)
     (wwg-highlight-for-editing)))
 
