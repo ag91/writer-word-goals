@@ -94,12 +94,11 @@
            target-count
            (abs remaining-words))
           'finished)
-      (progn
-        (message
-         "%s %s words left."
-         (wwg-choose-message remaining-words)
-         remaining-words)
-        nil))))
+      (message
+       "%s %s words left."
+       (wwg-choose-message remaining-words)
+       remaining-words)
+      nil)))
 
 (defun wwg-run-monitor (target-number buffer)
   "Call `wwg-monitor-function' with TARGET-NUMBER and BUFFER and cleanup timer if completed."
