@@ -61,13 +61,13 @@
 (defvar wwg-monitor-function
   'wwg-check-count-and-beep-with-message-if-finished
   "The function to monitor the target was reached in buffer.
-   It takes two arguments: a number (target) and the buffer.
+It takes two arguments: a number (target) and the buffer.
    It should return any value when it finds the target satisfied for cleanup purposes.")
 
 (defcustom wwg-monitor-period
   15
-  "How many seconds before checking if a writer has reached the target number of words.
-   Defaults to a minute."
+  "How many seconds before checking if a writer has reached the words target.
+Defaults to a minute."
   :group 'wwg
   :type 'string)
 
@@ -126,26 +126,14 @@
      wwg-monitor-period
      `(lambda () (wwg-run-monitor ,target-number ,buffer))))))
 
-(defun wwg-set-1k-goal-current-buffer ()
-  "Monitor when you achieve the target 1k words."
-  (interactive)
-  (wwg-set-goal-current-buffer 1000))
-
-(defun wwg-set-goal-current-buffer (number-of-words)
-  "Monitor when you achieve the target NUMBER-OF-WORDS."
-  (interactive "nHow many words do you want to write for this session?")
-  (let ((buffer (current-buffer))
-        (words-already-there (count-words (point-min) (point-max))))
-    (wwg-monitor-word-count-for-buffer (+ number-of-words words-already-there) buffer)))
-
-(define-minor-mode word-writer-goal
-  "Toggle writer goal for writing `wwg-number-of-words' words."
-  :init-value nil
+(define-minor-mode wwg-mode
+  "Toggle writer goal mode for writing some number of words."
   :group 'wwg
-  (if word-writer-goal
-      (wwg-set-goal-current-buffer wwg-number-of-words)
-    (cancel-timer (car (alist-get (current-buffer) wwg-active-timer-alist)))))
-
+  (if (not wwg-mode)
+      (cancel-timer (car (alist-get (current-buffer) wwg-active-timer-alist)))
+    (let* ((current (count-words (point-min) (point-max)))
+           (target (read-number "How many words do you want to write? " 1000)))
+      (wwg-monitor-word-count-for-buffer (+ current target) (current-buffer)))))
 
 (provide 'wwg)
 ;;; wwg.el ends here
