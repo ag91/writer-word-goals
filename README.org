@@ -38,3 +38,23 @@ Or if you use [[https://github.com/jwiegley/use-package][use-package]]:
 (use-package wwg
   :load-path "<your-path>/writer-word-goals")
 #+end_src
+
+
+** Release Checklist
+:PROPERTIES:
+:CREATED:  [2021-04-04 Sun 21:59]
+:END:
+
+*** DONE Set a goal of 1k words a day
+:PROPERTIES:
+:CREATED:  [2021-04-04 Sun 22:00]
+:END:
+
+- https://ag91.github.io/blog/2021/01/21/have-you-writer-ambitions-write-a-little-write-everyday-and-let-emacs-be-your-coach/
+
+*** DONE Set a goal for your editing sessions
+:PROPERTIES:
+:ID:       7af19eff-abda-41a1-b970-7ae5d1be9b38
+:END:
+
+- https://ag91.github.io/blog/2021/04/04/have-you-editing-to-do-edit-a-little-edit-every-day-and-let-emacs-be-your-coach/
