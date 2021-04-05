@@ -3,7 +3,7 @@
 ;; Copyright (C) 2021 Andrea
 
 ;; Author: Andrea andrea-dev@hotmail.com>
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: wp
 ;; Homepage: https://github.com/ag91/writer-word-goals
@@ -182,16 +182,71 @@ Optionally pass a custom FN to monitor."
    ((<= score 85) 'wwg-yellow-face)
    ('otherwise 'wwg-green-face)))
 
+;;;;; BEGIN Taken from writegood-mode: you should try this awesome mode out https://github.com/bnbeckwith/writegood-mode
+
+(defcustom wwg-sentence-punctuation
+  '(?. ?? ?!)
+  "List of punctuation denoting sentence end."
+  :group 'wwg
+  :type '(repeat character))
+
+(defun wwg-count-words (rstart rend)
+  "Count the words specified by the region bounded by RSTART and REND."
+  (if (boundp 'count-words)
+      (count-words rstart rend)
+    (how-many "[[:word:]]+" rstart rend)))
+
+(defun wwg-count-sentences (rstart rend)
+  "Count the sentences specified by the region bounded by RSTART and REND."
+  (how-many (regexp-opt-charset wwg-sentence-punctuation) rstart rend))
+
+(defun wwg-count-syllables (rstart rend)
+  "Count the number of syllables in the region bounded by RSTART and REND.
+This is approximate.
+Consecutive vowels count as one syllable.
+The endings -es -ed and -e are not counted as syllables."
+  (- (how-many "[aeiouy]+" rstart rend)
+     (how-many "\\(es\\|ed\\|e\\)\\b" rstart rend)))
+
+(defun wwg-fk-parameters (&optional rstart rend)
+  "Flesch-Kincaid reading parameters.
+Optionally pass a region with RSTART and REND."
+  (let* ((start (cond (rstart rstart)
+                      ((and transient-mark-mode mark-active) (region-beginning))
+                      ('t (point-min))))
+         (end   (cond (rend rend)
+                      ((and transient-mark-mode mark-active) (region-end))
+                      ('t (point-max))))
+         (words     (float (wwg-count-words start end)))
+         (syllables (float (wwg-count-syllables start end)))
+         (sentences (float (wwg-count-sentences start end))))
+    (list sentences words syllables)))
+
+(defun wwg-calculate-reading-ease (&optional start end)
+  "Calculate score of Flesch-Kincaid reading ease test.
+Optionally pass the region bounded by START and END.
+
+Scores roughly between 0 and 100."
+  (let* ((params (wwg-fk-parameters start end))
+         (sentences (nth 0 params))
+         (words     (nth 1 params))
+         (syllables (nth 2 params)))
+    (- 206.835 (* 1.015 (/ words sentences)) (* 84.6 (/ syllables words)))))
+
+;;;;; END Taken from writegood-mode
+
 (defun wwg-highlight-paragraphs ()
   "Highlight paragraphs according to easy score."
   (save-excursion
     (goto-char (point-min))
     (let (last-visited)
-      (while (and (bounds-of-thing-at-point 'paragraph) (not (eq last-visited (point-max))))
+      (while (and
+              (bounds-of-thing-at-point 'paragraph)
+              (not (eq last-visited (point-max))))
         (let* ((bounds (bounds-of-thing-at-point 'paragraph))
                (begin (car bounds))
                (end (cdr bounds))
-               (score (writegood-calculate-reading-ease begin end))
+               (score (wwg-calculate-reading-ease begin end))
                (color-face (wwg-pick-color-face score)))
           (ignore-errors (wwg-unhighlight-region begin))
           (wwg-highlight-region begin end color-face)
@@ -203,7 +258,9 @@ Optionally pass a custom FN to monitor."
   (save-excursion
     (goto-char (point-min))
     (let (last-visited)
-      (while (and (bounds-of-thing-at-point 'paragraph) (not (eq last-visited (point-max))))
+      (while (and
+              (bounds-of-thing-at-point 'paragraph)
+              (not (eq last-visited (point-max))))
         (let ((bounds (bounds-of-thing-at-point 'paragraph)))
           (wwg-unhighlight-region (car bounds))
           (setq last-visited (point))
@@ -217,7 +274,7 @@ Optionally pass a custom FN to monitor."
       (let* ((bounds (bounds-of-thing-at-point 'sentence))
              (begin (car bounds))
              (end (cdr bounds))
-             (score (writegood-calculate-reading-ease begin end))
+             (score (wwg-calculate-reading-ease begin end))
              (color-face (wwg-pick-color-face score)))
         (ignore-errors (wwg-unhighlight-region begin))
         (wwg-highlight-region begin end color-face)
