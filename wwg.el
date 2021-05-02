@@ -385,7 +385,7 @@ Scores roughly between 0 and 100."
 (defun wwg-calculate-readability-buffer (buffer)
   "Calculate readability of BUFFER."
   (with-current-buffer buffer
-    (writegood-calculate-reading-ease (point-min) (point-max))))
+    (wwg-calculate-reading-ease (point-min) (point-max))))
 
 (defun wwg-editing-goal-diff (editing-goal buffer)
   "Check how far away we are from EDITING-GOAL in BUFFER."
