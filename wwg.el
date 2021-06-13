@@ -131,6 +131,7 @@ Optionally pass a custom FN to monitor."
      wwg-monitor-period
      `(lambda () (wwg-run-monitor ,target-number ,buffer ',fn))))))
 
+;;;###autoload
 (define-minor-mode wwg-mode
   "Toggle writer goal mode for writing some number of words."
   :group 'wwg
@@ -346,6 +347,7 @@ Scores roughly between 0 and 100."
        (make-string 1 last-command-event))
       (wwg-highlight-sentences)))
 
+;;;###autoload
 (define-minor-mode wwg-score-sentences-mode
   "Toggle writer goal mode highlighting for sentences readibility."
   :group 'wwg
@@ -365,6 +367,7 @@ Scores roughly between 0 and 100."
        (symbol-name real-this-command))
       (wwg-highlight-paragraphs)))
 
+;;;###autoload
 (define-minor-mode wwg-score-paragraphs-mode
   "Toggle writer goal mode highlighting for paragraphs readibility."
   :group 'wwg
@@ -430,6 +433,7 @@ Scores roughly between 0 and 100."
     (string-to-number
      (string-trim untrimmed-goal))))
 
+;;;###autoload
 (define-minor-mode wwg-editing-mode
   "Toggle writer goal mode for writing some number of words."
   :group 'wwg
